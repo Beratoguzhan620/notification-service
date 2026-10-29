@@ -85,6 +85,8 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__Notifications: *database
       ConnectionStrings__RabbitMq: *rabbitmq
+      Smtp__Host: mailpit
+      Smtp__Port: "1025"
 
 volumes:
   db-data:

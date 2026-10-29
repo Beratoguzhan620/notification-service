@@ -4,7 +4,7 @@ using NotificationService.Infrastructure.Messaging;
 using NotificationService.Infrastructure.Persistence;
 using Serilog;
 
-// Delivers notifications. It exposes only health endpoints, so Compose and orchestrators can tell whether it is up.
+// Publishes the outbox and delivers notifications. It exposes only health endpoints, so Compose and orchestrators can tell whether it is up.
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSerilog((services, logger) => logger
@@ -19,9 +19,8 @@ if (string.IsNullOrWhiteSpace(connectionString))
 }
 
 builder.Services.AddNotificationsPersistence(connectionString);
-builder.Services.AddNotificationsMessaging(builder.Configuration);
 builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddHostedService<TopologySetup>();
+builder.Services.AddNotificationsWorker(builder.Configuration);
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<NotificationsDbContext>("database", tags: ["ready"])
