@@ -61,6 +61,7 @@ AGAIN=$(curl -sf -D "$HEADERS" -X POST "$API/api/notifications" -H "X-Api-Key: $
 [ "$AGAIN" = "$ID" ] || fail "a second notification was created"
 grep -qi '^idempotent-replayed: true' "$HEADERS" || fail "no Idempotent-Replayed header"
 [ "$(curl -sf "$MAILPIT/api/v1/search?query=to:%22$EMAIL%22" | jq ".messages | length")" = 1 ] || fail "the email was sent twice"
+echo "Same notification, Idempotent-Replayed: true, one email"
 
 step "An in-app notification lands in the inbox and is read"
 INAPP=$(send "$KEY" "password-$RUN" "$(jq -nc --arg rid "customer-$RUN" '{recipient: {id: $rid}, channel: "InApp",
@@ -69,19 +70,21 @@ wait_for "$KEY" "$INAPP" Delivered
 [ "$(curl -sf "$API/api/recipients/customer-$RUN/inbox" -H "X-Api-Key: $KEY" | jq .unread)" = 1 ] || fail "inbox not unread"
 curl -sf -X POST "$API/api/recipients/customer-$RUN/inbox/$INAPP/read" -H "X-Api-Key: $KEY" > /dev/null
 [ "$(curl -sf "$API/api/recipients/customer-$RUN/inbox" -H "X-Api-Key: $KEY" | jq .unread)" = 0 ] || fail "still unread"
+echo "Unread: 1, then 0"
 
 step "A switched-off channel is suppressed"
 curl -sf -X PATCH "$API/api/recipients/quiet-$RUN/preferences" -H "X-Api-Key: $KEY" -H 'Content-Type: application/json' \
   -d '{"email": false}' > /dev/null
 QUIET=$(send "$KEY" "quiet-$RUN" "$(order_shipped "quiet-$RUN@example.com" "quiet-$RUN")" | jq -r .id)
 wait_for "$KEY" "$QUIET" Suppressed
+echo "Suppressed, nothing sent"
 
 step "The mail server refuses everything: retries, then a dead letter"
 curl -sf -X PUT "$MAILPIT/api/v1/chaos" -H 'Content-Type: application/json' \
   -d '{"Recipient": {"ErrorCode": 451, "Probability": 100}}' > /dev/null
 DEAD=$(send "$KEY" "dead-$RUN" "$(order_shipped "later-$RUN@example.com" "later-$RUN")" | jq -r .id)
 wait_for "$KEY" "$DEAD" DeadLettered 90
-curl -sf "$API/api/notifications/$DEAD" -H "X-Api-Key: $KEY" | jq -c '{attempts, lastError, history: [.history[].status]}'
+curl -sf "$API/api/notifications/$DEAD" -H "X-Api-Key: $KEY" | jq -r '"Attempts: \(.attempts), last error: \(.lastError)", (.history | map(.status) | join(" → "))'
 curl -sf "$API/api/dead-letters" -H "X-Api-Key: $ADMIN_KEY" | jq -e --arg id "$DEAD" '.items | any(.id == $id)' > /dev/null \
   || fail "not in the dead letters"
 
@@ -90,6 +93,7 @@ curl -sf -X PUT "$MAILPIT/api/v1/chaos" -H 'Content-Type: application/json' \
   -d '{"Recipient": {"ErrorCode": 451, "Probability": 0}}' > /dev/null
 curl -sf -X POST "$API/api/dead-letters/$DEAD/replay" -H "X-Api-Key: $ADMIN_KEY" > /dev/null
 wait_for "$KEY" "$DEAD" Delivered
+echo "Delivered on the replay"
 
 step "The traces reached Jaeger"
 for _ in $(seq 1 30); do
