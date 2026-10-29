@@ -68,3 +68,24 @@ jobs:
       - name: Stop the stack
         if: always()
         run: docker compose down --volumes
+
+  e2e:
+    name: End-to-end flow
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start the stack
+        run: docker compose up --build --detach --wait --wait-timeout 300
+
+      - name: Run the flow
+        run: tests/e2e/flow.sh
+
+      - name: Show logs
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Stop the stack
+        if: always()
+        run: docker compose down --volumes

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using NotificationService.Infrastructure;
 using NotificationService.Infrastructure.Messaging;
 using NotificationService.Infrastructure.Persistence;
+using NotificationService.Infrastructure.Telemetry;
 using Serilog;
 
 // Publishes the outbox and delivers notifications. It exposes only health endpoints, so Compose and orchestrators can tell whether it is up.
@@ -20,6 +21,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
 
 builder.Services.AddNotificationsPersistence(connectionString);
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddNotificationsTracing(builder.Configuration, "notification-worker");
 builder.Services.AddNotificationsWorker(builder.Configuration);
 
 builder.Services.AddHealthChecks()

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -5,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NotificationService.Core.Outbox;
 using NotificationService.Infrastructure.Messaging;
+using NotificationService.Infrastructure.Telemetry;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
@@ -82,9 +84,18 @@ public sealed partial class DeliveryConsumer(
         var body = delivery.Body.ToArray();
         var properties = delivery.BasicProperties;
 
+        using var activity = Tracing.StartLinked($"process {Queues.Deliver}", ActivityKind.Consumer,
+            MessageHeaders.ReadString(properties.Headers, MessageHeaders.TraceParent));
+        activity?.SetTag("messaging.system", "rabbitmq");
+        activity?.SetTag("messaging.operation.type", "process");
+        activity?.SetTag("messaging.destination.name", Queues.Deliver);
+        activity?.SetTag("messaging.message.id", properties.MessageId);
+        activity?.SetTag("messaging.rabbitmq.message.attempt", MessageHeaders.ReadInt(properties.Headers, MessageHeaders.Attempt));
+
         if (!Guid.TryParse(properties.MessageId, out var messageId) || Read(body) is not { } message)
         {
             LogUnreadable(logger, properties.MessageId);
+            activity?.SetStatus(ActivityStatusCode.Error, "unreadable message");
             await channel.BasicRejectAsync(delivery.DeliveryTag, requeue: false, CancellationToken.None);
             return;
         }
@@ -107,6 +118,13 @@ public sealed partial class DeliveryConsumer(
 
             await channel.BasicNackAsync(delivery.DeliveryTag, multiple: false, requeue: true, CancellationToken.None);
             return;
+        }
+
+        activity?.SetTag("notification.id", message.NotificationId.ToString());
+        activity?.SetTag("notification.outcome", outcome.Kind.ToString());
+        if (outcome.Kind is OutcomeKind.Retry or OutcomeKind.Dead)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, outcome.Reason);
         }
 
         switch (outcome.Kind)

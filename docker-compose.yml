@@ -36,9 +36,11 @@ services:
       timeout: 10s
       retries: 30
 
-  # Catches every email; nothing leaves the machine.
+  # Catches every email; nothing leaves the machine. Chaos mode lets the end-to-end flow make it refuse mail.
   mailpit:
     image: axllent/mailpit:v1.30.2
+    environment:
+      MP_ENABLE_CHAOS: "true"
     ports:
       - "8025:8025"
 
@@ -62,6 +64,7 @@ services:
       Database__MigrateOnStartup: "true"
       Bootstrap__AdminApiKey: ${ADMIN_API_KEY:-ns_localadm_local-admin-key-change-me-in-the-env-file}
       Bootstrap__SampleTemplates: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
     ports:
       - "8080:8080"
 
@@ -87,6 +90,7 @@ services:
       ConnectionStrings__RabbitMq: *rabbitmq
       Smtp__Host: mailpit
       Smtp__Port: "1025"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
 
 volumes:
   db-data:

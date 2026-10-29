@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using NotificationService.Core;
 
 namespace NotificationService.Api.Common;
@@ -13,7 +14,14 @@ internal sealed class DomainExceptionHandler(IProblemDetailsService problemDetai
 {
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
-        if (exception is not DomainException domain)
+        var domain = exception switch
+        {
+            DomainException known => known,
+            DbUpdateConcurrencyException => new DomainException(ErrorCodes.ConcurrentUpdate,
+                "The notification changed while you were acting on it. Read it again and retry."),
+            _ => null,
+        };
+        if (domain is null)
         {
             return false;
         }
