@@ -39,7 +39,8 @@ public sealed class InboxTests(ApiFactory factory)
         var after = await (await client.GetAsync("/api/recipients/inbox-2/inbox")).ReadAsync<InboxPageDto>();
 
         Assert.NotNull(read.ReadAt);
-        Assert.Equal(read.ReadAt, again.ReadAt);
+        // PostgreSQL keeps microseconds; the first answer still has .NET's finer ticks.
+        Assert.Equal(read.ReadAt!.Value, again.ReadAt!.Value, TimeSpan.FromMilliseconds(1));
         Assert.Equal(2, unreadOnly.Unread);
         Assert.DoesNotContain(unreadOnly.Items, i => i.Id == ids[0]);
         Assert.Equal(2, all.GetProperty("marked").GetInt32());
