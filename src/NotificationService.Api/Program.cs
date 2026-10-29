@@ -6,12 +6,15 @@ using Microsoft.EntityFrameworkCore;
 using NotificationService.Api.Common;
 using NotificationService.Api.Features.Auth;
 using NotificationService.Api.Features.Clients;
+using NotificationService.Api.Features.DeadLetters;
+using NotificationService.Api.Features.Inbox;
 using NotificationService.Api.Features.Notifications;
 using NotificationService.Api.Features.Preferences;
 using NotificationService.Api.Features.Templates;
 using NotificationService.Api.Logging;
 using NotificationService.Infrastructure;
 using NotificationService.Infrastructure.Persistence;
+using NotificationService.Infrastructure.Telemetry;
 using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Core;
@@ -34,6 +37,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
 // The API writes to the database only; the workers talk to RabbitMQ.
 builder.Services.AddNotificationsPersistence(connectionString);
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddNotificationsTracing(builder.Configuration, "notification-api");
 builder.Services.AddScoped<NotificationRequests>();
 
 builder.Services.ConfigureHttpJsonOptions(options =>
@@ -84,6 +88,8 @@ app.MapClientEndpoints();
 app.MapTemplateEndpoints();
 app.MapPreferenceEndpoints();
 app.MapNotificationEndpoints();
+app.MapInboxEndpoints();
+app.MapDeadLetterEndpoints();
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") });

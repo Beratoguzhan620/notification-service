@@ -1,9 +1,11 @@
+using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NotificationService.Core.Notifications;
 using NotificationService.Infrastructure.Messaging;
 using NotificationService.Infrastructure.Persistence;
+using NotificationService.Infrastructure.Telemetry;
 
 namespace NotificationService.Infrastructure.Delivery;
 
@@ -54,14 +56,20 @@ public sealed partial class NotificationProcessor(
 
         var notification = claimed.Notification!;
         string? error = null;
-        try
+        using (var activity = Tracing.Source.StartActivity($"deliver {notification.Channel}", ActivityKind.Client))
         {
-            var channel = channels.Single(c => c.Channel == notification.Channel);
-            await channel.DeliverAsync(notification, cancellationToken);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
-        {
-            error = $"{ex.GetType().Name}: {ex.Message}";
+            activity?.SetTag("notification.id", notification.Id.ToString());
+            activity?.SetTag("notification.attempt", notification.Attempts);
+            try
+            {
+                var channel = channels.Single(c => c.Channel == notification.Channel);
+                await channel.DeliverAsync(notification, cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+            {
+                error = $"{ex.GetType().Name}: {ex.Message}";
+                activity?.SetStatus(ActivityStatusCode.Error, error);
+            }
         }
 
         // Once something may have been sent, the result is recorded even during shutdown.

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,7 @@ using NotificationService.Core.Notifications;
 using NotificationService.Core.Outbox;
 using NotificationService.Infrastructure.Messaging;
 using NotificationService.Infrastructure.Persistence;
+using NotificationService.Infrastructure.Telemetry;
 using RabbitMQ.Client;
 
 namespace NotificationService.Infrastructure.Outbox;
@@ -75,13 +77,21 @@ public sealed partial class OutboxRelay(
         foreach (var message in messages)
         {
             var now = clock.GetUtcNow();
+            // The span continues the trace of the request that wrote the row, and its id travels with the message.
+            using var activity = Tracing.StartLinked($"publish {Queues.Deliver}", ActivityKind.Producer, message.TraceParent);
+            activity?.SetTag("messaging.system", "rabbitmq");
+            activity?.SetTag("messaging.operation.type", "send");
+            activity?.SetTag("messaging.destination.name", Queues.Deliver);
+            activity?.SetTag("messaging.message.id", message.Id.ToString());
             try
             {
-                await publisher.PublishAsync(Queues.Deliver, Properties(message, now), Encoding.UTF8.GetBytes(message.Payload), cancellationToken);
+                await publisher.PublishAsync(Queues.Deliver, Properties(message, activity?.Id ?? message.TraceParent, now),
+                    Encoding.UTF8.GetBytes(message.Payload), cancellationToken);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 // The broker is unavailable or refused the message; keep the rest for the next round.
+                activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
                 message.MarkFailed($"{ex.GetType().Name}: {ex.Message}");
                 LogPublishFailed(logger, message.Id, ex.Message);
                 break;
@@ -106,12 +116,12 @@ public sealed partial class OutboxRelay(
         return published;
     }
 
-    private static BasicProperties Properties(OutboxMessage message, DateTimeOffset now)
+    private static BasicProperties Properties(OutboxMessage message, string? traceParent, DateTimeOffset now)
     {
         var headers = new Dictionary<string, object?> { [MessageHeaders.Attempt] = 1 };
-        if (message.TraceParent is not null)
+        if (traceParent is not null)
         {
-            headers[MessageHeaders.TraceParent] = message.TraceParent;
+            headers[MessageHeaders.TraceParent] = traceParent;
         }
 
         return new BasicProperties
