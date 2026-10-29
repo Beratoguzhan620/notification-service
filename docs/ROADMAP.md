@@ -67,6 +67,8 @@ tests/NotificationService.IntegrationTests  Real PostgreSQL, RabbitMQ and Mailpi
 
 ## Stages
 
+All five stages are done.
+
 | # | Branch | Content |
 |---|---|---|
 | 01 | `stage/01-skeleton` | Projects, API clients with hashed keys, key authentication, Compose (PostgreSQL, RabbitMQ, Mailpit, Jaeger), CI |

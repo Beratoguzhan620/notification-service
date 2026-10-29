@@ -25,7 +25,8 @@ internal sealed class DocumentInfoTransformer : IOpenApiDocumentTransformer
                 4. Send one with `POST /api/notifications` and an `Idempotency-Key` header, then follow it at
                    `GET /api/notifications/{id}`.
 
-                **Roles:** senders send notifications and read their own; admins also manage clients and templates.
+                **Roles:** senders send notifications and read their own; admins also manage clients and templates
+                and replay dead letters.
 
                 **Errors** follow RFC 9457 problem details with a stable `code`, for example `validation_failed`
                 or `not_found`. Every response carries an `X-Correlation-Id`.
