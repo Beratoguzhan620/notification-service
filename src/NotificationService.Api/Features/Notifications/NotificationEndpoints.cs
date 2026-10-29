@@ -30,6 +30,10 @@ internal static class NotificationEndpoints
                 a different body is refused with `idempotency_key_reused`.
                 """);
 
+        group.MapGet("/", List)
+            .WithSummary("Notifications, newest first")
+            .WithDescription("Filter by `recipientId` and `status`. Senders see their own notifications; admins see all.");
+
         group.MapGet("/{id:guid}", Get)
             .WithSummary("A notification with its history")
             .WithDescription("Senders see their own notifications; admins see all.");
@@ -58,6 +62,42 @@ internal static class NotificationEndpoints
         }
 
         return TypedResults.Accepted($"/api/notifications/{notification.Id}", NotificationResponse.Create(notification, withHistory: true));
+    }
+
+    private static async Task<Results<Ok<Page<NotificationResponse>>, ValidationProblem>> List(
+        ClaimsPrincipal user, NotificationsDbContext db, CancellationToken ct,
+        string? recipientId = null, NotificationStatus? status = null, Guid? cursor = null, int? limit = null)
+    {
+        if (recipientId is not null && !Recipient.IsValidId(recipientId))
+        {
+            return Features.Preferences.PreferenceEndpoints.InvalidRecipient();
+        }
+
+        var take = Paging.Clamp(limit);
+        var query = db.Notifications.AsNoTracking();
+        if (!user.IsInRole(ApiKeyAuthentication.AdminRole))
+        {
+            var clientId = user.ClientId();
+            query = query.Where(n => n.ClientId == clientId);
+        }
+
+        if (recipientId is not null)
+        {
+            query = query.Where(n => n.RecipientId == recipientId);
+        }
+
+        if (status is { } wanted)
+        {
+            query = query.Where(n => n.Status == wanted);
+        }
+
+        if (cursor is { } after)
+        {
+            query = query.Where(n => n.Id < after);
+        }
+
+        var rows = await query.OrderByDescending(n => n.Id).Take(take + 1).ToListAsync(ct);
+        return TypedResults.Ok(Paging.Create(rows, take, n => n.Id, n => NotificationResponse.Create(n, withHistory: false)));
     }
 
     private static async Task<Ok<NotificationResponse>> Get(Guid id, ClaimsPrincipal user, NotificationsDbContext db, CancellationToken ct)
