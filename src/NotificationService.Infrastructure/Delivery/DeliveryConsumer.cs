@@ -7,6 +7,7 @@ using NotificationService.Core.Outbox;
 using NotificationService.Infrastructure.Messaging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using RabbitMQ.Client.Exceptions;
 
 namespace NotificationService.Infrastructure.Delivery;
 
@@ -55,11 +56,24 @@ public sealed partial class DeliveryConsumer(
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
         await base.StopAsync(cancellationToken);
-        if (_channel is not null)
+
+        // A host may be stopped more than once; only the first stop closes the channel.
+        var channel = Interlocked.Exchange(ref _channel, null);
+        if (channel is null)
         {
-            await _channel.CloseAsync(cancellationToken);
-            await _channel.DisposeAsync();
+            return;
         }
+
+        try
+        {
+            await channel.CloseAsync(cancellationToken);
+        }
+        catch (Exception ex) when (ex is ObjectDisposedException or AlreadyClosedException)
+        {
+            // The connection went first; the broker requeues whatever was not acknowledged.
+        }
+
+        await channel.DisposeAsync();
     }
 
     private async Task HandleAsync(IChannel channel, BasicDeliverEventArgs delivery, CancellationToken stoppingToken)
