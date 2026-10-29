@@ -77,6 +77,7 @@ app.MapScalarApiReference(options => options
     .HideDarkModeToggle()
     .DisableDefaultFonts()
     .WithCustomCss(ScalarStyle.Css)
+    .AddPreferredSecuritySchemes(ApiKeyAuthentication.Scheme)
     .HideDeveloperTools()
     .HideClientButton()
     .DisableAgent()
