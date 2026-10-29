@@ -4,6 +4,7 @@ using NotificationService.Core.Notifications;
 using NotificationService.Core.Outbox;
 using NotificationService.Core.Preferences;
 using NotificationService.Core.Templates;
+using NotificationService.Infrastructure.Delivery;
 
 namespace NotificationService.Infrastructure.Persistence;
 
@@ -22,6 +23,8 @@ public sealed class NotificationsDbContext(DbContextOptions<NotificationsDbConte
     public DbSet<NotificationEvent> NotificationEvents => Set<NotificationEvent>();
 
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+
+    public DbSet<ProcessedMessage> ProcessedMessages => Set<ProcessedMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(NotificationsDbContext).Assembly);

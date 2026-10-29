@@ -50,6 +50,8 @@ public sealed class Topology(IOptions<DeliveryOptions> options)
             {
                 ["x-queue-type"] = "quorum",
                 ["x-message-ttl"] = (long)options.Value.DeadLetterRetention.TotalMilliseconds,
+                // People look through this queue and put messages back; that must never count against them.
+                ["x-delivery-limit"] = -1,
             },
             cancellationToken: cancellationToken);
     }

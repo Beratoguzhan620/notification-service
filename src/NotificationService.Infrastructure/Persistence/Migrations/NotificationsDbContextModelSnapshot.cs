@@ -409,6 +409,29 @@ namespace NotificationService.Infrastructure.Persistence.Migrations
                     b.ToTable("template_versions", (string)null);
                 });
 
+            modelBuilder.Entity("NotificationService.Infrastructure.Delivery.ProcessedMessage", b =>
+                {
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("message_id");
+
+                    b.Property<Guid>("NotificationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("notification_id");
+
+                    b.Property<DateTimeOffset>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("processed_at");
+
+                    b.HasKey("MessageId")
+                        .HasName("pk_processed_messages");
+
+                    b.HasIndex("ProcessedAt")
+                        .HasDatabaseName("ix_processed_messages_processed_at");
+
+                    b.ToTable("processed_messages", (string)null);
+                });
+
             modelBuilder.Entity("NotificationService.Core.Notifications.Notification", b =>
                 {
                     b.HasOne("NotificationService.Core.Clients.ApiClient", null)
