@@ -28,6 +28,7 @@ public static class Tracing
         services.AddOpenTelemetry()
             .ConfigureResource(resource => resource.AddService(serviceName))
             .WithTracing(tracing => tracing
+                .SetSampler(new SkipLoneClientSpans())
                 .AddSource(SourceName)
                 .AddAspNetCoreInstrumentation(options => options.Filter = context =>
                     !context.Request.Path.StartsWithSegments("/health") && !context.Request.Path.StartsWithSegments("/scalar"))
@@ -41,5 +42,17 @@ public static class Tracing
     {
         var parent = ActivityContext.TryParse(traceParent, null, isRemote: true, out var context) ? context : default;
         return Source.StartActivity(name, kind, parent);
+    }
+
+    /// <summary>
+    /// The outbox relay asks the database for new rows twice a second. Those queries belong to no request, and
+    /// as traces of their own they would bury the interesting ones, so client spans without a parent are dropped.
+    /// </summary>
+    private sealed class SkipLoneClientSpans : Sampler
+    {
+        public override SamplingResult ShouldSample(in SamplingParameters samplingParameters) =>
+            samplingParameters.ParentContext.TraceId == default && samplingParameters.Kind == ActivityKind.Client
+                ? new SamplingResult(SamplingDecision.Drop)
+                : new SamplingResult(SamplingDecision.RecordAndSample);
     }
 }
