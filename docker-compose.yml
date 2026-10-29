@@ -61,6 +61,7 @@ services:
       ConnectionStrings__Notifications: *database
       Database__MigrateOnStartup: "true"
       Bootstrap__AdminApiKey: ${ADMIN_API_KEY:-ns_localadm_local-admin-key-change-me-in-the-env-file}
+      Bootstrap__SampleTemplates: "true"
     ports:
       - "8080:8080"
 
