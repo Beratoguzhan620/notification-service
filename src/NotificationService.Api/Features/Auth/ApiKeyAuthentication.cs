@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using NotificationService.Core.Clients;
@@ -17,17 +18,18 @@ internal static class ApiKeyAuthentication
     public const string NameClaim = "client_name";
     public const string RoleClaim = "role";
     public const string AdminPolicy = "Admin";
+    public const string AdminRole = nameof(ClientRole.Admin);
 
     public static IServiceCollection AddApiKeyAuthentication(this IServiceCollection services)
     {
         services.AddAuthentication(Scheme)
             .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(Scheme, configureOptions: null);
         services.AddAuthorizationBuilder()
-            .SetDefaultPolicy(new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder(Scheme).RequireAuthenticatedUser().Build())
+            .SetDefaultPolicy(new AuthorizationPolicyBuilder(Scheme).RequireAuthenticatedUser().Build())
             .AddPolicy(AdminPolicy, policy => policy
                 .AddAuthenticationSchemes(Scheme)
                 .RequireAuthenticatedUser()
-                .RequireRole(nameof(ClientRole.Admin)));
+                .RequireRole(AdminRole));
         return services;
     }
 }

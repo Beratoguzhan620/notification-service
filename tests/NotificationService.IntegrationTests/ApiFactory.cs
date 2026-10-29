@@ -26,6 +26,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("ConnectionStrings:RabbitMq", RabbitMqConnectionString);
         builder.UseSetting("Database:MigrateOnStartup", "true");
         builder.UseSetting("Bootstrap:AdminApiKey", AdminKey);
+        builder.UseSetting("Bootstrap:SampleTemplates", "true");
     }
 
     public async Task InitializeAsync()

@@ -11,6 +11,9 @@ internal static class ErrorStatuses
         [ErrorCodes.NotFound] = StatusCodes.Status404NotFound,
         [ErrorCodes.InvalidState] = StatusCodes.Status409Conflict,
         [ErrorCodes.NameTaken] = StatusCodes.Status409Conflict,
+        [ErrorCodes.TemplateExists] = StatusCodes.Status409Conflict,
+        [ErrorCodes.ConcurrentUpdate] = StatusCodes.Status409Conflict,
+        [ErrorCodes.InvalidTemplate] = StatusCodes.Status400BadRequest,
     };
 
     public static int StatusFor(string code) =>
