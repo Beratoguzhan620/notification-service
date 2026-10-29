@@ -20,8 +20,12 @@ internal sealed class DocumentInfoTransformer : IOpenApiDocumentTransformer
 
                 1. Paste the admin API key from configuration into *Authentication* (`X-Api-Key`).
                 2. Create a key for your system at `POST /api/clients`.
+                3. Look at the templates at `GET /api/templates` (Compose starts with `order-shipped` and
+                   `password-changed` in Turkish and English).
+                4. Send one with `POST /api/notifications` and an `Idempotency-Key` header, then follow it at
+                   `GET /api/notifications/{id}`.
 
-                **Roles:** senders send notifications and read their own; admins also manage clients.
+                **Roles:** senders send notifications and read their own; admins also manage clients and templates.
 
                 **Errors** follow RFC 9457 problem details with a stable `code`, for example `validation_failed`
                 or `not_found`. Every response carries an `X-Correlation-Id`.

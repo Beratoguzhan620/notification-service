@@ -6,6 +6,9 @@ using Microsoft.EntityFrameworkCore;
 using NotificationService.Api.Common;
 using NotificationService.Api.Features.Auth;
 using NotificationService.Api.Features.Clients;
+using NotificationService.Api.Features.Notifications;
+using NotificationService.Api.Features.Preferences;
+using NotificationService.Api.Features.Templates;
 using NotificationService.Api.Logging;
 using NotificationService.Infrastructure;
 using NotificationService.Infrastructure.Persistence;
@@ -31,6 +34,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
 // The API writes to the database only; the workers talk to RabbitMQ.
 builder.Services.AddNotificationsPersistence(connectionString);
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<NotificationRequests>();
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -77,6 +81,9 @@ app.MapScalarApiReference(options => options
 app.MapGet("/", () => Results.Redirect("/scalar")).ExcludeFromDescription();
 
 app.MapClientEndpoints();
+app.MapTemplateEndpoints();
+app.MapPreferenceEndpoints();
+app.MapNotificationEndpoints();
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") });
@@ -88,6 +95,7 @@ if (app.Configuration.GetValue("Database:MigrateOnStartup", false))
 }
 
 await FirstAdminSeeder.SeedAsync(app.Services);
+await SampleTemplates.SeedAsync(app.Services);
 
 await app.RunAsync();
 
