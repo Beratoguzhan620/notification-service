@@ -1,0 +1,27 @@
+# Build
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+TestResults/
+*.user
+*.suo
+.vs/
+.vscode/
+.idea/
+*.log
+
+# Secrets and local settings
+.env
+.env.*
+!.env.example
+secrets.json
+*.pfx
+
+# OS
+.DS_Store
+Thumbs.db
+
+# End-to-end output
+tests/e2e/node_modules/
+tests/e2e/output/
