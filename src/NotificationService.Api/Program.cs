@@ -7,6 +7,7 @@ using NotificationService.Api.Common;
 using NotificationService.Api.Features.Auth;
 using NotificationService.Api.Features.Clients;
 using NotificationService.Api.Features.DeadLetters;
+using NotificationService.Api.Features.Demo;
 using NotificationService.Api.Features.Inbox;
 using NotificationService.Api.Features.Notifications;
 using NotificationService.Api.Features.Preferences;
@@ -27,7 +28,7 @@ builder.Services.AddSerilog((services, logger) => logger
     .ReadFrom.Services(services)
     .Enrich.FromLogContext());
 
-var connectionString = builder.Configuration.GetConnectionString("Notifications");
+var connectionString = ConnectionStrings.FromUrl(builder.Configuration.GetConnectionString("Notifications"));
 if (string.IsNullOrWhiteSpace(connectionString))
 {
     throw new InvalidOperationException(
@@ -91,6 +92,7 @@ app.MapPreferenceEndpoints();
 app.MapNotificationEndpoints();
 app.MapInboxEndpoints();
 app.MapDeadLetterEndpoints();
+app.MapDemoEndpoints();
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") });
@@ -103,6 +105,7 @@ if (app.Configuration.GetValue("Database:MigrateOnStartup", false))
 
 await FirstAdminSeeder.SeedAsync(app.Services);
 await SampleTemplates.SeedAsync(app.Services);
+await DemoEndpoints.SeedAsync(app.Services, app.Configuration["Demo:SenderApiKey"]);
 
 await app.RunAsync();
 

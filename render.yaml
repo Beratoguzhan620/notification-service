@@ -1,0 +1,27 @@
+# The public demo on Render's free plan: one web service from deploy/demo/Dockerfile (a demo page, the API, a
+# worker, RabbitMQ and Mailpit), with the database on Neon. Render asks for the database's connection string when
+# the blueprint is first applied. The sender key below is published on purpose: it can only send to the demo's own
+# Mailpit and in-app inboxes, never to a real address.
+services:
+  - type: web
+    name: notification-service-demo
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./deploy/demo/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health/ready
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: ConnectionStrings__Notifications
+        sync: false
+      - key: Database__MigrateOnStartup
+        value: "true"
+      - key: Bootstrap__SampleTemplates
+        value: "true"
+      - key: Demo__SenderApiKey
+        value: ns_demosend_public-demo-key-for-anyone-to-try-it
+      - key: ASPNETCORE_FORWARDEDHEADERS_ENABLED
+        value: "true"
+      - key: PORT
+        value: "8080"
