@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Json;
 using NotificationService.Api.Features.Demo;
 using NotificationService.IntegrationTests.Support;
 
