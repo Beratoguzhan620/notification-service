@@ -13,7 +13,7 @@ builder.Services.AddSerilog((services, logger) => logger
     .ReadFrom.Services(services)
     .Enrich.FromLogContext());
 
-var connectionString = builder.Configuration.GetConnectionString("Notifications");
+var connectionString = ConnectionStrings.FromUrl(builder.Configuration.GetConnectionString("Notifications"));
 if (string.IsNullOrWhiteSpace(connectionString))
 {
     throw new InvalidOperationException("ConnectionStrings:Notifications is not configured.");

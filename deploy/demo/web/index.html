@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Notification Service · live demo</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>Notification Service</h1>
+      <p>A service other systems call to reach people by email or an in-app inbox: versioned Turkish and English templates, idempotent requests, delivery through RabbitMQ workers with retries and dead letters.</p>
+      <nav>
+        <a href="/scalar">API reference</a>
+        <a href="/mail/" target="_blank" rel="noopener">Mailbox (every email lands here)</a>
+        <a href="https://github.com/Beratoguzhan620/notification-service">Source on GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="card">
+      <h2>1 · Send a notification</h2>
+      <p class="muted">This page calls the API with the demo's sender key:</p>
+      <p><code id="key">…</code></p>
+      <form id="send">
+        <div class="grid">
+          <label>Template
+            <select name="template">
+              <option value="order-shipped">order-shipped</option>
+              <option value="password-changed">password-changed</option>
+            </select>
+          </label>
+          <label>Language
+            <select name="language"><option value="tr">Türkçe</option><option value="en">English</option></select>
+          </label>
+          <label>Channel
+            <select name="channel"><option value="Email">Email</option><option value="InApp">In-app inbox</option></select>
+          </label>
+          <label>Name<input name="name" value="Ayşe" maxlength="60" required></label>
+          <label>Email<input name="email" type="email" value="ayse@example.com" maxlength="120" required></label>
+          <label>Recipient id<input name="recipient" value="customer-42" maxlength="60" required></label>
+        </div>
+        <button type="submit">Send</button>
+        <p id="error" class="error" role="alert" hidden></p>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>2 · Watch it move</h2>
+      <p class="muted">The API saves the notification with an outbox entry; a worker publishes it to RabbitMQ and another delivers it. The history below refreshes every second.</p>
+      <div id="status" class="muted">Nothing sent yet.</div>
+      <ol id="history"></ol>
+      <p id="where" hidden></p>
+    </section>
+
+    <section class="card">
+      <h2>3 · The in-app inbox</h2>
+      <p class="muted">What the recipient above would see in an app, with the unread count.</p>
+      <div id="inbox" class="muted">Send an in-app notification to fill it.</div>
+    </section>
+  </main>
+
+  <footer class="wrap muted">A free server: after a quiet spell the first request can take about a minute. Emails never leave the demo; they all go to its own Mailpit.</footer>
+  <script src="app.js"></script>
+</body>
+</html>
