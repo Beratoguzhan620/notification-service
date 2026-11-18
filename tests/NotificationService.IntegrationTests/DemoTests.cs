@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Text.Json;
 using NotificationService.Api.Features.Demo;
 using NotificationService.IntegrationTests.Support;
 
@@ -18,8 +17,9 @@ public sealed class DemoTests(ApiFactory factory)
 
         var response = await anonymous.GetAsync("/api/demo");
 
+        // 200 with nothing in it: a page asking learns there is no key without a failed request.
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal(JsonValueKind.Null, (await response.Content.ReadFromJsonAsync<JsonElement>()).ValueKind);
+        Assert.True((await response.Content.ReadAsStringAsync()) is "" or "null");
     }
 
     [Fact]
