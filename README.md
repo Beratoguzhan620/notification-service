@@ -15,6 +15,8 @@ A service other systems call to reach people by email or through an in-app inbox
 
 ## Try it
 
+**Live demo:** [notification-service-demo.onrender.com](https://notification-service-demo.onrender.com). A small page calls the API with a public demo key: pick a template and a language, send a notification and open the e-mail it produced in the Mailpit inbox under `/mail/`. Nothing leaves the server; Mailpit catches every message. It runs on a free server with the database on Neon: after a quiet spell the first visit can take about a minute.
+
 ```bash
 docker compose up --build
 ```
