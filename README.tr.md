@@ -15,6 +15,8 @@ Diğer sistemlerin kişilere e-postayla ya da uygulama içi gelen kutusuyla ula�
 
 ## Deneme
 
+**Canlı demo:** [notification-service-demo.onrender.com](https://notification-service-demo.onrender.com). Küçük bir sayfa API'yi herkese açık bir demo anahtarıyla çağırıyor: bir şablon ve dil seç, bildirimi gönder ve oluşan e-postayı `/mail/` altındaki Mailpit gelen kutusunda aç. Sunucudan dışarı hiçbir şey çıkmaz; bütün iletileri Mailpit yakalar. Ücretsiz bir sunucuda, veritabanı Neon'da çalışıyor: bir süre kimse açmadıysa ilk açılış bir dakika kadar sürebilir.
+
 ```bash
 docker compose up --build
 ```
